@@ -8,27 +8,18 @@ class ApiModel():
     def verifyProperties(cls, content):
         return all([x in content for x in cls.required_properties])
 
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-
-    username = db.Column(db.Unicode(255), nullable=False, server_default=u'', unique=True)
-    email = db.Column(db.Unicode(255), nullable=False, server_default=u'', unique=True)
-    google_id = db.Column(db.Unicode(255), nullable=False, server_default=u'', unique=True)
-    oauth_token = db.Column(db.Unicode(255), nullable=True, server_default=u'', unique=True)
-
 class User_Followings(db.Model):
     __tablename__ = 'user_followings'
     id = db.Column(db.Integer, primary_key=True)
 
-    hunter_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    marker_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    hunter_id = db.Column(db.Unicode(64))
+    marker_id = db.Column(db.Unicode(64))
 
 class User_Category_Points(db.Model):
     __tablename__ = 'user_category_points'
     id = db.Column(db.Integer, primary_key=True)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Unicode(64))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     points = db.Column(db.Integer)
 
@@ -42,7 +33,7 @@ class Mark(db.Model):
     __tablename__ = 'marks'
     id = db.Column(db.Integer, primary_key=True)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Unicode(64))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
     content_id = db.Column(db.Integer, db.ForeignKey('contents.id'))
@@ -51,7 +42,7 @@ class Location(db.Model):
     __tablename__ = 'locations'
     id = db.Column(db.Integer, primary_key=True)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Unicode(64))
     GPS_id = db.Column(db.Integer, db.ForeignKey('GPS.id'))
     magnetic_id = db.Column(db.Integer, db.ForeignKey('magnetic.id'))
 
