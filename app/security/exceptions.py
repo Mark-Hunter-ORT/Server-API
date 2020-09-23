@@ -4,3 +4,6 @@ class InvalidCredentialsException(Exception):
 
 class UsernameNotFoundException(Exception):
     pass
+
+class TokenHeaderNotFoundException(Exception):
+    pass

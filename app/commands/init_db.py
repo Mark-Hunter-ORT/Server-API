@@ -11,7 +11,6 @@ from flask_script import Command
 
 from app import db
 from app.models.mark_hunter import User
-from app.security import generate_new_user
 
 class InitDbCommand(Command):
     """ Initialize the database."""
@@ -24,7 +23,7 @@ def init_db():
     """ Initialize the database."""
     db.drop_all()
     db.create_all()
-    create_users()
+    #create_users()
 
 
 def create_users():
@@ -35,11 +34,11 @@ def create_users():
 
     # Add users
     # Normal user
-    generate_new_user(
-        current_app.config["INITIAL_USERS"]["user"]["username"],
-        current_app.config["INITIAL_USERS"]["user"]["oauth_token"],
-        current_app.config["INITIAL_USERS"]["user"]["email"],
-        current_app.config["INITIAL_USERS"]["user"]["google_id"])
+    # generate_new_user(
+    #     current_app.config["INITIAL_USERS"]["user"]["username"],
+    #     current_app.config["INITIAL_USERS"]["user"]["oauth_token"],
+    #     current_app.config["INITIAL_USERS"]["user"]["email"],
+    #     current_app.config["INITIAL_USERS"]["user"]["google_id"])
 
     # Save to DB
     db.session.commit()

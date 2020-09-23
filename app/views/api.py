@@ -22,3 +22,7 @@ api_blueprint = Blueprint('api', __name__)
 #         db.session.commit()
 #         return jsonify({'message': 'team deleted'}), 200
 
+@api_blueprint.route('/api/test', methods=['GET', 'PUT', 'DELETE'])
+def test():
+    return jsonify(request.current_user)
+

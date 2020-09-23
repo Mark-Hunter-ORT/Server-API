@@ -1,58 +1,25 @@
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask import abort
-from app.models.mark_hunter import User
-from app import db
-from app import login
-from .exceptions import InvalidCredentialsException, UsernameNotFoundException
+from flask import abort, request
+from firebase_admin.auth import ExpiredIdTokenError, InvalidIdTokenError
+from .exceptions import InvalidCredentialsException, UsernameNotFoundException, TokenHeaderNotFoundException
 import os
 
-def generate_new_user(username, token, email, google_id):
-    token_hash = generate_password_hash(token)
-    new_user = User(
-        username=username,
-        email=email,
-        oauth_token=token_hash,
-        google_id=google_id
-    )
-    db.session.add(new_user)
-    db.session.commit()
+TOKEN_HEADER_KEY = 'User-Token'
 
-def change_token(user, old_token, new_token):
-    if check_user_credentials(user, old_token):
-        new_password_hash = generate_password_hash(new_token)
-        user.password = new_password_hash
-    else:
-        raise InvalidCredentialsException("Username/Password invalid.")
+class Security():
+    def __init__(self, firebase):
+        self.firebase = firebase
 
-def check_user_credentials(user, token):
-    return check_password_hash(user.oauth_token, token)
+    def validate_token(self, headers):
+        token = headers.get(TOKEN_HEADER_KEY)
+        user_uid = None
+        if token is None:
+            abort(401, "Must include '{}' header with token to authenticate request.".format(TOKEN_HEADER_KEY))
+        try:
+            user = self.firebase.verify_token(token)
+            setattr(request, "current_user", user)
+        except ExpiredIdTokenError:
+            abort(401, "Provided token is expired.")
+        except InvalidIdTokenError:
+            abort(401, "Provided token is invalid.")
 
-def check_username_availability(username):
-    if db.session.query(User).filter(User.username == username):
-        return False
-    else:
-        return True
-
-def check_email_availability(email):
-    if db.session.query(User).filter(User.email == email):
-        return False
-    else:
-        return True
-
-def get_user_from_credentials(username, token):
-    '''
-        Verifies that the given credentials are valid and if they are, returns the
-        corresponding user object.
-    '''
-    user = User.query.filter(User.username == username).first()
-    if not user:
-        abort(404, "User not found")
-    if check_user_credentials(user, token):
-        return user
-    else:
-        return None
-
-@login.user_loader
-def load_user(user_id):
-    return User.query.filter(User.id == user_id).first()
 

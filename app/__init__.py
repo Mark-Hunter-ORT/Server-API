@@ -9,12 +9,16 @@ from flask_script import Manager
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, MigrateCommand
 from flask_login import LoginManager
+from app.firebase import Firebase
+from app.security import Security
 
 
 # Instantiate Flask extensions
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
+fb = None
+sec = None
 
 # Initialize Flask Application
 def create_app(extra_config_settings={}):
@@ -39,12 +43,22 @@ def create_app(extra_config_settings={}):
     # Setup Flask-Login
     login.init_app(app)
 
+    # Setup Firebase
+    fb = Firebase(app)
+
+    # Setup Security
+    sec = Security(fb)
+
     # Register blueprints
     from .views import register_blueprints
     register_blueprints(app)
 
     # Setup Flask-User to handle user account related forms
     from .models.mark_hunter import User
+
+    @app.before_request
+    def before_request():
+        sec.validate_token(request.headers)
 
     @app.after_request
     def after_request(response):
