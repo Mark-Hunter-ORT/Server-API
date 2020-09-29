@@ -6,8 +6,9 @@ import os
 TOKEN_HEADER_KEY = 'User-Token'
 
 class Security():
-    def __init__(self, firebase):
+    def __init__(self, app, firebase):
         self.firebase = firebase
+        self.app = app
 
     def validate_token(self, headers):
         token = headers.get(TOKEN_HEADER_KEY)
@@ -20,6 +21,9 @@ class Security():
         except ExpiredIdTokenError:
             abort(401, "Provided token is expired.")
         except InvalidIdTokenError:
-            abort(401, "Provided token is invalid.")
+            if token == self.app.config["FIREBASE_TEST_TOKEN"]:
+                setattr(request, "current_user", self.app.config["FIREBASE_TEST_USER"])
+            else:
+                abort(401, "Provided token is invalid.")
 
 

@@ -17,7 +17,7 @@ from app.security import Security
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
-fb = None
+fb = Firebase()
 sec = None
 
 # Initialize Flask Application
@@ -44,10 +44,10 @@ def create_app(extra_config_settings={}):
     login.init_app(app)
 
     # Setup Firebase
-    fb = Firebase(app)
+    fb.init_app(app)
 
     # Setup Security
-    sec = Security(fb)
+    sec = Security(app, fb)
 
     # Register blueprints
     from .views import register_blueprints
