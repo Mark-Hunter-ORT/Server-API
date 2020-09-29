@@ -29,6 +29,7 @@ class User_Category_Points(db.Model, ApiModel):
 
     user_id = db.Column(db.Unicode(64))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
+    category = db.relationship('Category')
     points = db.Column(db.Integer)
 
     required_properties = ['user_id', 'category_id']
@@ -125,22 +126,37 @@ class Magnetic_Location(db.Model, ApiModel):
             'magnetic_z': self.magnetic_z
         }
 
-class Content(db.Model, ApiModel):
-    __tablename__ = 'contents'
-    id = db.Column(db.Integer, primary_key=True)
-
-    text = db.Column(db.Unicode(1024), nullable=True, server_default=u'')
-
-    required_properties = ['text']
 
 class Content_Images(db.Model, ApiModel):
     __tablename__ = 'content_images'
     id = db.Column(db.Integer, primary_key=True)
 
     content_id = db.Column(db.Integer, db.ForeignKey('contents.id'))
+    content = db.relationship('Content')
     image_url = db.Column(db.Unicode(512), nullable=False)
 
     required_properties = ['content_id', 'image_url']
+
+class Content(db.Model, ApiModel):
+    __tablename__ = 'contents'
+    id = db.Column(db.Integer, primary_key=True)
+
+    text = db.Column(db.Unicode(1024), nullable=True, server_default=u'')
+    images = db.relationship('Content_Images')
+
+    def add_image(self, file_b64):
+        file_url = firebase.upload_image(file_b64)
+        image = Content_Images(content=self, image_url=file_url)
+        db.session.add(image)
+        
+    @property
+    def serialized(self):
+        return {
+            'id': self.id,
+            'text': self.text,
+            'images': [image.image_url for image in self.images]
+        }
+
 
 class User():
     def __init__(self, uid):
@@ -148,11 +164,48 @@ class User():
         self.name = firebase_user.display_name
         self.email = firebase_user.email
         self.uid = uid
+        followers = db.session.query(User_Followings).filter(User_Followings.marker_id == uid).all()
+        self.followers = [follower.hunter_id for follower in followers]
+        followings = db.session.query(User_Followings).filter(User_Followings.hunter_id == uid).all()
+        self.following = [following.marker_id for following in followings]
+        points = db.session.query(User_Category_Points).filter(User_Category_Points.user_id == uid).all()
+        self.points = {}
+        for point in points:
+            self.points[point.category.name] = point.points
     
+    def follow(self, hunter_uid):
+        if hunter_uid in self.followers:
+            abort(400, "User {} already following user {}".format(hunter_uid, self.uid))
+        else:
+            new_user_following = User_Followings(marker_id=self.uid, hunter_id=hunter_uid)
+            self.followers.append(hunter_uid)
+            db.session.add(new_user_following)
+
+    def unfollow(self, hunter_uid):
+        if hunter_uid not in self.followers:
+            abort(400, "User {} is not following user {}".format(hunter_uid, self.uid))
+        else:
+            user_following = db.session.query(User_Followings).filter(User_Followings.marker_id == self.uid and
+                                        User_Followings.hunter_id == hunter_uid).first()
+            db.session.delete(user_following)
+        
+    def add_points(self, category_name, points):
+        category = db.session.query(Category).filter(Category.name == category_name).first()
+        category_points = db.session.query(User_Category_Points).filter(User_Category_Points.user_id == self.uid and
+                                        User_Category_Points.category_id == category.id).first()
+        if category_points is None:
+            category_points = User_Category_Points(user_id=self.uid, category_id=category.id, points=0)
+        category_points.points += points
+        self.points[category_name] = category_points.points
+        db.session.add(category_points)
+
     @property
     def serialized(self):
         return {
             'uid': self.uid,
             'name': self.name,
-            'email': self.email
+            'email': self.email,
+            'followers': self.followers,
+            'following': self.following,
+            'points': self.points
         }

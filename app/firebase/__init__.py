@@ -1,13 +1,18 @@
 import firebase_admin
 from firebase_admin import auth as fb_auth
-import json
+from firebase_admin import storage as fb_stor
+import json, os, base64
+from io import BytesIO
 
 class Firebase():
     def init_app(self, app):
         self.account_key_json = json.loads(app.config["FIREBASE_ACCOUNT_KEY_JSON"], strict=False)
         self.cred = firebase_admin.credentials.Certificate(self.account_key_json)
         self.project_id = app.config["FIREBASE_PROJECT_ID"]
-        self.app = firebase_admin.initialize_app(self.cred, {'projectId':self.project_id})
+        self.bucket_name = app.config["FIREBASE_BUCKET_NAME"]
+        self.app = firebase_admin.initialize_app(self.cred, 
+            {'projectId':self.project_id, '': self.bucket_name})
+        self.bucket = fb_stor.bucket(self.bucket_name)
         self.auth = fb_auth.Client(self.app)
 
     def verify_token(self, token):
@@ -15,8 +20,11 @@ class Firebase():
 
     def get_user(self, uid):
         return self.auth.get_user(uid)
-        # return {
-        #     'uid': uid,
-        #     'name': user.display_name,
-        #     'email': user.email
-        # }
+    
+    def upload_image(self, file_base64):
+        file_to_upload = BytesIO(base64.b64decode(file_base64))
+        file_name = os.urandom(64).hex()
+        blob = self.bucket.blob(file_name)
+        blob.upload_from_file(file_to_upload, content_type='image/png')
+        blob.make_public()
+        return blob.public_url

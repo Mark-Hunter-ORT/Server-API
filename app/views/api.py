@@ -2,6 +2,7 @@ from flask import Blueprint, redirect, render_template
 from flask import request, url_for, jsonify, abort
 from flask_login import login_required, current_user
 from app import db
+from app import fb as firebase
 from app.utils import json_response, validate_required_properties
 from app.models.mark_hunter import User_Category_Points, Category, Mark, Location, GPS_Location, Magnetic_Location
 from app.models.mark_hunter import Content, Content_Images, User
@@ -28,7 +29,8 @@ def location():
 
 @api_blueprint.route('/api/location/<id>/', methods=['GET', 'DELETE'])
 def location_id(id):
-    location = db.session.query(Location).filter(Location.id == id and Location.user_id == request.current_user['id'])[0]
+    location = db.session.query(Location).filter(Location.id == id and 
+                                        Location.user_id == request.current_user['id']).first()
     if request.method == 'GET':
         return json_response(location), 200
     if request.method == 'DELETE':
@@ -48,7 +50,7 @@ def category():
 
 @api_blueprint.route('/api/category/<id>/', methods=['GET', 'DELETE'])
 def category_id(id):
-    category = db.session.query(Category).filter(Category.id == id)[0]
+    category = db.session.query(Category).filter(Category.id == id).first()
     if request.method == 'GET':
         return json_response(category), 200
     if request.method == 'DELETE':
@@ -59,9 +61,10 @@ def category_id(id):
 @api_blueprint.route('/api/mark/', methods=['GET', 'POST'])
 def mark():
     if request.method == 'POST':
-        category = db.session.query(Category).filter(Category.name == request.json["category"])[0]
+        category = db.session.query(Category).filter(Category.name == request.json["category"]).first()
         if 'location_id' in request.json:
-            location = db.session.query(Location).filter(Location.id == id and Location.user_id == request.current_user['id'])[0]
+            location = db.session.query(Location).filter(Location.id == id and 
+                                                    Location.user_id == request.current_user['id']).first()
         else:
             gps_location = GPS_Location(GPS_x=request.json["location"]["GPS"]["GPS_x"], 
                                         GPS_y=request.json["location"]["GPS"]["GPS_y"])
@@ -85,8 +88,43 @@ def mark_id(id):
     if request.method == 'DELETE':
         db.session.delete(mark)
         db.session.commit()
-        return jsonify({'message': 'category deleted'}), 200
+        return jsonify({'message': 'mark deleted'}), 200
 
 @api_blueprint.route('/api/user/<id>/')
 def user_id(id):
     return json_response(User(id)), 200
+
+@api_blueprint.route('/api/user/<id>/follow/', methods=['POST'])
+def user_follow(id):
+    marker_user = User(id)
+    marker_user.follow(request.current_user['id'])
+    db.session.commit()
+    return 'OK', 200
+
+@api_blueprint.route('/api/user/<id>/unfollow/', methods=['DELETE'])
+def user_unfollow(id):
+    marker_user = User(id)
+    marker_user.unfollow(request.current_user['id'])
+    db.session.commit()
+    return 'DELETED', 200
+
+@api_blueprint.route('/api/user/<id>/category/<cat_name>/', methods=['POST'])
+def user_add_points(id, cat_name):
+    user = User(id)
+    user.add_points(cat_name, request.json['points'])
+    db.session.commit()
+    return json_response(user)
+
+@api_blueprint.route('/api/content/', methods=['GET','POST'])
+def content():
+    if request.method == 'POST':
+        content = Content(text=request.json['text'])
+        for f in request.json['files']:
+            content.add_image(f)
+        db.session.add(content)
+        db.session.commit()
+        return json_response(content), 201
+    contents = db.session.query(Content).all()
+    return json_response(contents), 200
+
+        
