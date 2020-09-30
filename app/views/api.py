@@ -73,7 +73,13 @@ def mark():
                 location.magnetic = Magnetic_Location(magnetic_x=request.json["location"]['magnetic']['magnetic_x'],
                                                       magnetic_y=request.json["location"]['magnetic']['magnetic_x'], 
                                                       magnetic_z=request.json["location"]['magnetic']['magnetic_z'])
-        new_mark = Mark(location=location, user_id=request.current_user['id'], category=category)
+        if 'content_id' in request.json:
+            content = db.session.query(Content).filter(Content.id == id).first()
+        else:
+            content = Content(text=request.json['content']['text'])
+            for f in request.json['content']['files']:
+                content.add_image(f)
+        new_mark = Mark(location=location, user_id=request.current_user['id'], category=category, content=content)
         db.session.add(new_mark)
         db.session.commit()
         return json_response(new_mark), 201
@@ -115,16 +121,16 @@ def user_add_points(id, cat_name):
     db.session.commit()
     return json_response(user)
 
-@api_blueprint.route('/api/content/', methods=['GET','POST'])
-def content():
-    if request.method == 'POST':
-        content = Content(text=request.json['text'])
-        for f in request.json['files']:
-            content.add_image(f)
-        db.session.add(content)
-        db.session.commit()
-        return json_response(content), 201
-    contents = db.session.query(Content).all()
-    return json_response(contents), 200
+# @api_blueprint.route('/api/content/', methods=['GET','POST'])
+# def content():
+#     if request.method == 'POST':
+#         content = Content(text=request.json['text'])
+#         for f in request.json['files']:
+#             content.add_image(f)
+#         db.session.add(content)
+#         db.session.commit()
+#         return json_response(content), 201
+#     contents = db.session.query(Content).all()
+#     return json_response(contents), 200
 
         

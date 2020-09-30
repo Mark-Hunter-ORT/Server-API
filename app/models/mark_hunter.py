@@ -1,6 +1,6 @@
 from enum import Enum
 from flask_login import UserMixin
-from flask import abort
+from flask import abort, request
 from app import db
 from app import fb as firebase
 
@@ -56,15 +56,28 @@ class Mark(db.Model, ApiModel):
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
     location = db.relationship('Location')
     content_id = db.Column(db.Integer, db.ForeignKey('contents.id'))
+    content = db.relationship('Content')
 
     required_properties = ['category_id', 'location_id', 'content_id']
 
     @property
     def serialized(self):
-        return {
+        data = {
             'user_id': self.user_id,
             'category': self.category.serialized,
             'location': self.location.serialized
+        }
+        if self.user_id == request.current_user['id']:
+            data['content'] = self.content.serialized
+        return data
+
+    @property
+    def serialized_revealed(self):
+        return {
+            'user_id': self.user_id,
+            'category': self.category.serialized,
+            'location': self.location.serialized,
+            'content': self.content.serialized
         }
 
 class Location(db.Model, ApiModel):
