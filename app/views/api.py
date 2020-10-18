@@ -8,7 +8,7 @@ from app.models.mark_hunter import User_Category_Points, Category, Mark, Locatio
 from app.models.mark_hunter import Content, Content_Images, User
 api_blueprint = Blueprint('api', __name__)
 
-@api_blueprint.route('/api/test/', methods=['GET', 'PUT', 'DELETE'])
+@api_blueprint.route('/api/test/')
 def test():
     return jsonify(request.current_user)
 
@@ -114,7 +114,7 @@ def user_unfollow(id):
     db.session.commit()
     return 'DELETED', 200
 
-@api_blueprint.route('/api/user/<id>/category/<cat_name>/', methods=['POST'])
+@api_blueprint.route('/api/user/<id>/category/<cat_name>/add_points/', methods=['POST'])
 def user_add_points(id, cat_name):
     user = User(id)
     user.add_points(cat_name, request.json['points'])
