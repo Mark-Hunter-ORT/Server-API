@@ -66,7 +66,8 @@ class Mark(db.Model, ApiModel):
             'user_id': self.user_id,
             'category': self.category.serialized,
             'location': self.location.serialized,
-            'content': self.content.serialized
+            'content': self.content.serialized,
+            'id': self.id
         }
 
     @property
@@ -75,7 +76,8 @@ class Mark(db.Model, ApiModel):
             'user_id': self.user_id,
             'category': self.category.serialized,
             'location': self.location.serialized,
-            'content': self.content.serialized
+            'content': self.content.serialized,
+            'id': self.id
         }
 
 class Location(db.Model, ApiModel):
