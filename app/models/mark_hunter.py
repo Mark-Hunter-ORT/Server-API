@@ -67,8 +67,8 @@ class Mark(db.Model, ApiModel):
             'category': self.category.serialized,
             'location': self.location.serialized
         }
-        if self.user_id == request.current_user['id']:
-            data['content'] = self.content.serialized
+        # if self.user_id == request.current_user['id']:
+        #     data['content'] = self.content.serialized
         return data
 
     @property
