@@ -62,14 +62,12 @@ class Mark(db.Model, ApiModel):
 
     @property
     def serialized(self):
-        data = {
+        return {
             'user_id': self.user_id,
             'category': self.category.serialized,
-            'location': self.location.serialized
+            'location': self.location.serialized,
+            'content': self.content.serialized
         }
-        # if self.user_id == request.current_user['id']:
-        #     data['content'] = self.content.serialized
-        return data
 
     @property
     def serialized_revealed(self):
