@@ -16,7 +16,7 @@ def test():
 def location():
     if request.method == 'POST':
         new_gps_location = GPS_Location(GPS_x=request.json["GPS"]["GPS_x"], GPS_y=request.json["GPS"]["GPS_y"])
-        new_location = Location(GPS=new_gps_location, user_id=request.current_user['id'])
+        new_location = Location(GPS=new_gps_location, user_id=request.current_user['uid'])
         if "magnetic" in request.json:
             new_magnetic_location = Magnetic_Location(magnetic_x=request.json['magnetic']['magnetic_x'],
             magnetic_y=request.json['magnetic']['magnetic_x'], magnetic_z=request.json['magnetic']['magnetic_z'])
@@ -24,13 +24,13 @@ def location():
         db.session.add(new_location)
         db.session.commit()
         return json_response(new_location), 201
-    query = db.session.query(Location).filter(Location.user_id == request.current_user['id']).all()
+    query = db.session.query(Location).filter(Location.user_id == request.current_user['uid']).all()
     return json_response(query), 200
 
 @api_blueprint.route('/api/location/<id>/', methods=['GET', 'DELETE'])
 def location_id(id):
     location = db.session.query(Location).filter(Location.id == id and 
-                                        Location.user_id == request.current_user['id']).first()
+                                        Location.user_id == request.current_user['uid']).first()
     if request.method == 'GET':
         return json_response(location), 200
     if request.method == 'DELETE':
@@ -64,11 +64,11 @@ def mark():
         category = db.session.query(Category).filter(Category.name == request.json["category"]).first()
         if 'location_id' in request.json:
             location = db.session.query(Location).filter(Location.id == id and 
-                                                    Location.user_id == request.current_user['id']).first()
+                                                    Location.user_id == request.current_user['uid']).first()
         else:
             gps_location = GPS_Location(GPS_x=request.json["location"]["GPS"]["GPS_x"], 
                                         GPS_y=request.json["location"]["GPS"]["GPS_y"])
-            location = Location(GPS=gps_location, user_id=request.current_user['id'])
+            location = Location(GPS=gps_location, user_id=request.current_user['uid'])
             if "magnetic" in request.json["location"]:
                 location.magnetic = Magnetic_Location(magnetic_x=request.json["location"]['magnetic']['magnetic_x'],
                                                       magnetic_y=request.json["location"]['magnetic']['magnetic_x'], 
@@ -79,7 +79,7 @@ def mark():
             content = Content(text=request.json['content']['text'])
             for f in request.json['content']['files']:
                 content.add_image(f)
-        new_mark = Mark(location=location, user_id=request.current_user['id'], category=category, content=content)
+        new_mark = Mark(location=location, user_id=request.current_user['uid'], category=category, content=content)
         db.session.add(new_mark)
         db.session.commit()
         return json_response(new_mark), 201
@@ -103,14 +103,14 @@ def user_id(id):
 @api_blueprint.route('/api/user/<id>/follow/', methods=['POST'])
 def user_follow(id):
     marker_user = User(id)
-    marker_user.follow(request.current_user['id'])
+    marker_user.follow(request.current_user['uid'])
     db.session.commit()
     return 'OK', 200
 
 @api_blueprint.route('/api/user/<id>/unfollow/', methods=['DELETE'])
 def user_unfollow(id):
     marker_user = User(id)
-    marker_user.unfollow(request.current_user['id'])
+    marker_user.unfollow(request.current_user['uid'])
     db.session.commit()
     return 'DELETED', 200
 
