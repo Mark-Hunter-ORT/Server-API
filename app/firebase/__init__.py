@@ -4,6 +4,12 @@ from firebase_admin import storage as fb_stor
 import json, os, base64
 from io import BytesIO
 
+class MockUser():
+    def __init__(self, user_data):
+        self.uid = user_data['uid']
+        self.display_name = user_data['name']
+        self.email = user_data['email']
+
 class Firebase():
     def init_app(self, app):
         self.account_key_json = json.loads(app.config["FIREBASE_ACCOUNT_KEY_JSON"], strict=False)
@@ -14,12 +20,16 @@ class Firebase():
             {'projectId':self.project_id, '': self.bucket_name})
         self.bucket = fb_stor.bucket(self.bucket_name)
         self.auth = fb_auth.Client(self.app)
+        self.config = app.config
 
     def verify_token(self, token):
         return self.auth.verify_id_token(token)
 
     def get_user(self, uid):
-        return self.auth.get_user(uid)
+        if uid == self.config["FIREBASE_TEST_USER"]["uid"]:
+            return MockUser(self.config["FIREBASE_TEST_USER"])
+        else:
+            return self.auth.get_user(uid)
     
     def upload_image(self, file_base64):
         file_to_upload = BytesIO(base64.b64decode(file_base64))

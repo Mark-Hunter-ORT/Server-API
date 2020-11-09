@@ -87,6 +87,9 @@ class Mark(db.Model, ApiModel):
             'content': self.content.serialized,
             'id': self.id
         }
+    
+    def get_coordinates(self):
+        return (self.location.GPS.GPS_y, self.location.GPS.GPS_x)
 
 class Location(db.Model, ApiModel):
     __tablename__ = 'locations'
@@ -178,10 +181,17 @@ class Content(db.Model, ApiModel):
             'images': [image.image_url for image in self.images]
         }
 
+class UserDB(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Unicode(64))
+    username = db.Column(db.Unicode(64))
 
 class User():
     def __init__(self, uid):
+        user_db = db.session.query(UserDB).filter(UserDB.user_id == uid).first()
         firebase_user = firebase.get_user(uid)
+        self.username = user_db.username
         self.name = firebase_user.display_name
         self.email = firebase_user.email
         self.uid = uid
@@ -228,5 +238,6 @@ class User():
             'email': self.email,
             'followers': self.followers,
             'following': self.following,
-            'points': self.points
+            'points': self.points,
+            'username': self.username
         }

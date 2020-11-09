@@ -5,7 +5,8 @@ from app import db
 from app import fb as firebase
 from app.utils import json_response, validate_required_properties
 from app.models.mark_hunter import User_Category_Points, Category, Mark, Location, GPS_Location, Magnetic_Location
-from app.models.mark_hunter import Content, Content_Images, User
+from app.models.mark_hunter import Content, Content_Images, User, UserDB
+import geopy.distance
 api_blueprint = Blueprint('api', __name__)
 
 @api_blueprint.route('/api/test/')
@@ -86,6 +87,25 @@ def mark():
     query = db.session.query(Mark).all()
     return json_response(query), 200
 
+@api_blueprint.route('/api/mark/<lat>/<lon>/<distance>/')
+def mark_by_coords(lat, lon, distance):
+    lat = float(lat)
+    lon = float(lon)
+    distance = float(distance)
+    query = db.session.query(Mark).join(Mark.location).join(Location.GPS).filter(
+            GPS_Location.GPS_y < (lat + (distance + 10))).filter(
+            GPS_Location.GPS_x < (lon + (distance + 10))).filter(
+            GPS_Location.GPS_y > (lat - (distance + 10))).filter(
+            GPS_Location.GPS_x > (lon - (distance + 10))).all()
+    marks_in_range = []
+    for mark in query:
+        point = ((lat if lat > -90 else 90) if lat < 90 else 90, 
+                (lon if lon > -180 else 180) if lon < 180 else 180)
+        print(geopy.distance.geodesic(mark.get_coordinates(), point).km * 1000)
+        if geopy.distance.geodesic(mark.get_coordinates(), point).km * 1000 < distance:
+            marks_in_range.append(mark)
+    return json_response(marks_in_range), 200
+
 @api_blueprint.route('/api/mark/<id>/', methods=['GET', 'DELETE'])
 def mark_id(id):
     mark = db.session.query(Mark).filter(Mark.id == id)[0]
@@ -106,6 +126,13 @@ def user_follow(id):
     marker_user.follow(request.current_user['uid'])
     db.session.commit()
     return 'OK', 200
+
+@api_blueprint.route('/api/user/', methods=['POST'])
+def user_post():
+    user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
+    db.session.add(user_db)
+    db.session.commit()
+    return json_response(User(request.current_user['uid'])), 201
 
 @api_blueprint.route('/api/user/<id>/unfollow/', methods=['DELETE'])
 def user_unfollow(id):
