@@ -132,7 +132,7 @@ def user_follow(id):
 @api_blueprint.route('/api/user/', methods=['POST'])
 def user_post():
     try:
-        User(id)
+        User(request.current_user['uid'])
         return 'User already registered.', 400
     except UserNotFound:
         user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
