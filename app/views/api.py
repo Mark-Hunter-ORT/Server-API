@@ -89,8 +89,8 @@ def mark():
 
 @api_blueprint.route('/api/mark/<lat>/<lon>/<distance>/')
 def mark_by_coords(lat, lon, distance):
-    lat = float(lon)
-    lon = float(lat)
+    lat = float(lat)
+    lon = float(lon)
     distance = float(distance)
     query = db.session.query(Mark).join(Mark.location).join(Location.GPS).filter(
             GPS_Location.GPS_y < (lat + (distance + 10))).filter(
