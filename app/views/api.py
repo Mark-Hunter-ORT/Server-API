@@ -93,15 +93,14 @@ def mark_by_coords(lat, lon, distance):
     lon = float(lon)
     distance = float(distance)
     query = db.session.query(Mark).join(Mark.location).join(Location.GPS).filter(
-            GPS_Location.GPS_x < (lat + (distance + 10))).filter(
-            GPS_Location.GPS_y < (lon + (distance + 10))).filter(
-            GPS_Location.GPS_x > (lat - (distance + 10))).filter(
-            GPS_Location.GPS_y > (lon - (distance + 10))).all()
+            GPS_Location.GPS_y < (lat + (distance + 10))).filter(
+            GPS_Location.GPS_x < (lon + (distance + 10))).filter(
+            GPS_Location.GPS_y > (lat - (distance + 10))).filter(
+            GPS_Location.GPS_x > (lon - (distance + 10))).all()
     marks_in_range = []
     for mark in query:
         point = ((lat if lat > -90 else 90) if lat < 90 else 90, 
                 (lon if lon > -180 else 180) if lon < 180 else 180)
-        print(geopy.distance.geodesic(mark.get_coordinates(), point).km * 1000)
         if geopy.distance.geodesic(mark.get_coordinates(), point).km * 1000 < distance:
             marks_in_range.append(mark)
     return json_response(marks_in_range), 200
