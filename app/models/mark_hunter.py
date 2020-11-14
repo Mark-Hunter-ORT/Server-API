@@ -187,9 +187,14 @@ class UserDB(db.Model):
     user_id = db.Column(db.Unicode(64))
     username = db.Column(db.Unicode(64))
 
+class UserNotFound(Exception):
+    pass
+
 class User():
     def __init__(self, uid):
         user_db = db.session.query(UserDB).filter(UserDB.user_id == uid).first()
+        if user_db is None:
+            raise UserNotFound('User with id {} not found in database.'.format(uid))
         firebase_user = firebase.get_user(uid)
         self.username = user_db.username
         self.name = firebase_user.display_name

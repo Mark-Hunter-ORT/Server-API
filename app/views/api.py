@@ -5,7 +5,7 @@ from app import db
 from app import fb as firebase
 from app.utils import json_response, validate_required_properties
 from app.models.mark_hunter import User_Category_Points, Category, Mark, Location, GPS_Location, Magnetic_Location
-from app.models.mark_hunter import Content, Content_Images, User, UserDB
+from app.models.mark_hunter import Content, Content_Images, User, UserDB, UserNotFound
 import geopy.distance
 api_blueprint = Blueprint('api', __name__)
 
@@ -118,7 +118,10 @@ def mark_id(id):
 
 @api_blueprint.route('/api/user/<id>/')
 def user_id(id):
-    return json_response(User(id)), 200
+    try:
+        return json_response(User(id)), 200
+    except UserNotFound:
+        return 'User with id {} not found'.format(id), 404
 
 @api_blueprint.route('/api/user/<id>/follow/', methods=['POST'])
 def user_follow(id):
@@ -129,10 +132,14 @@ def user_follow(id):
 
 @api_blueprint.route('/api/user/', methods=['POST'])
 def user_post():
-    user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
-    db.session.add(user_db)
-    db.session.commit()
-    return json_response(User(request.current_user['uid'])), 201
+    try:
+        User(id)
+        return 'User already registered.', 400
+    except UserNotFound:
+        user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
+        db.session.add(user_db)
+        db.session.commit()
+        return json_response(User(request.current_user['uid'])), 201
 
 @api_blueprint.route('/api/user/<id>/unfollow/', methods=['DELETE'])
 def user_unfollow(id):
