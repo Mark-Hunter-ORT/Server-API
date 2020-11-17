@@ -62,6 +62,12 @@ def category_id(id):
 @api_blueprint.route('/api/mark/', methods=['GET', 'POST'])
 def mark():
     if request.method == 'POST':
+        
+        marks_too_close = Mark.get_marks_by_distance(request.json["location"]["GPS"]["GPS_x"],
+                                                     request.json["location"]["GPS"]["GPS_y"], 5)
+        if marks_too_close:
+            return "This mark is too close to another mark.", 400
+
         category = db.session.query(Category).filter(Category.name == request.json["category"]).first()
         if 'location_id' in request.json:
             location = db.session.query(Location).filter(Location.id == id and 
@@ -89,20 +95,7 @@ def mark():
 
 @api_blueprint.route('/api/mark/<lat>/<lon>/<distance>/')
 def mark_by_coords(lat, lon, distance):
-    lat = float(lat)
-    lon = float(lon)
-    distance = float(distance)
-    query = db.session.query(Mark).join(Mark.location).join(Location.GPS).filter(
-            GPS_Location.GPS_y < (lat + (distance + 10))).filter(
-            GPS_Location.GPS_x < (lon + (distance + 10))).filter(
-            GPS_Location.GPS_y > (lat - (distance + 10))).filter(
-            GPS_Location.GPS_x > (lon - (distance + 10))).all()
-    marks_in_range = []
-    for mark in query:
-        point = ((lat if lat > -90 else 90) if lat < 90 else 90, 
-                (lon if lon > -180 else 180) if lon < 180 else 180)
-        if geopy.distance.geodesic(mark.get_coordinates(), point).km * 1000 < distance:
-            marks_in_range.append(mark)
+    marks_in_range = Mark.get_marks_by_distance(float(lat), float(lon), float(distance))
     return json_response(marks_in_range), 200
 
 @api_blueprint.route('/api/mark/<id>/', methods=['GET', 'DELETE'])

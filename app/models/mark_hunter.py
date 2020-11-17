@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from flask import abort, request
 from app import db
 from app import fb as firebase
+import geopy
 
 class ApiModel():
     required_properties = []
@@ -62,14 +63,6 @@ class Mark(db.Model, ApiModel):
 
     @property
     def serialized(self):
-        # data = {
-        #     'user_id': self.user_id,
-        #     'category': self.category.serialized,
-        #     'location': self.location.serialized
-        # }
-        # if self.user_id == request.current_user['uid']:
-        #     data['content'] = self.content.serialized
-        # return data
         return {
             'user_id': self.user_id,
             'category': self.category.serialized,
@@ -90,6 +83,21 @@ class Mark(db.Model, ApiModel):
     
     def get_coordinates(self):
         return (self.location.GPS.GPS_y, self.location.GPS.GPS_x)
+
+    @staticmethod
+    def get_marks_by_distance(lon, lat, distance):
+        query = db.session.query(Mark).join(Mark.location).join(Location.GPS).filter(
+                GPS_Location.GPS_y < (lat + (distance + 10))).filter(
+                GPS_Location.GPS_x < (lon + (distance + 10))).filter(
+                GPS_Location.GPS_y > (lat - (distance + 10))).filter(
+                GPS_Location.GPS_x > (lon - (distance + 10))).all()
+        marks_in_range = []
+        for mark in query:
+            point = ((lat if lat > -90 else 90) if lat < 90 else 90, 
+                    (lon if lon > -180 else 180) if lon < 180 else 180)
+            if geopy.distance.geodesic(mark.get_coordinates(), point).km * 1000 < distance:
+                marks_in_range.append(mark)
+        return marks_in_range
 
 class Location(db.Model, ApiModel):
     __tablename__ = 'locations'
