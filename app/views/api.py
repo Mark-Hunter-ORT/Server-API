@@ -95,7 +95,7 @@ def mark():
 
 @api_blueprint.route('/api/mark/<lat>/<lon>/<distance>/')
 def mark_by_coords(lat, lon, distance):
-    marks_in_range = Mark.get_marks_by_distance(float(lat), float(lon), float(distance))
+    marks_in_range = Mark.get_marks_by_distance(float(lon), float(lat), float(distance))
     return json_response(marks_in_range), 200
 
 @api_blueprint.route('/api/mark/<id>/', methods=['GET', 'DELETE'])
