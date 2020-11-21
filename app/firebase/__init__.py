@@ -27,7 +27,7 @@ class Firebase():
 
     def get_user(self, uid):
         if uid == self.config["FIREBASE_TEST_USER"]["uid"]:
-            return self.config["FIREBASE_TEST_USER"]
+            return MockUser(self.config["FIREBASE_TEST_USER"])
         else:
             return self.auth.get_user(uid)
     
