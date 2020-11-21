@@ -61,6 +61,7 @@ def category_id(id):
 
 @api_blueprint.route('/api/mark/', methods=['GET', 'POST'])
 def mark():
+    User.clear_cached_user()
     if request.method == 'POST':
         
         marks_too_close = Mark.get_marks_by_distance(request.json["location"]["GPS"]["GPS_x"],
@@ -95,11 +96,13 @@ def mark():
 
 @api_blueprint.route('/api/mark/<lat>/<lon>/<distance>/')
 def mark_by_coords(lat, lon, distance):
+    User.clear_cached_user()
     marks_in_range = Mark.get_marks_by_distance(float(lon), float(lat), float(distance))
     return json_response(marks_in_range), 200
 
 @api_blueprint.route('/api/mark/<id>/', methods=['GET', 'DELETE'])
 def mark_id(id):
+    User.clear_cached_user()
     mark = db.session.query(Mark).filter(Mark.id == id)[0]
     if request.method == 'GET':
         return json_response(mark), 200
@@ -122,16 +125,29 @@ def user_follow(id):
     db.session.commit()
     return 'OK', 200
 
-@api_blueprint.route('/api/user/', methods=['POST'])
+@api_blueprint.route('/api/user/', methods=['GET', 'POST'])
 def user_post():
     try:
-        User(request.current_user['uid'])
-        return 'User already registered.', 400
+        user = User(request.current_user['uid'])
+        if request.method == 'POST':
+            return 'User already registered.', 400
+        else:
+            return json_response(user), 200
     except UserNotFound:
         user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
         db.session.add(user_db)
         db.session.commit()
         return json_response(User(request.current_user['uid'])), 201
+
+@api_blueprint.route('/api/user/followings/')
+def user_followings():
+    try:
+        user = User(request.current_user['uid'])
+        user_follows = [User(uid) for uid in user.following]
+        followings = [{'uid': follow.uid, 'username': follow.username} for follow in user_follows]
+        return jsonify(followings), 200
+    except UserNotFound:
+        return 'User with id {} not found'.format(id), 404
 
 @api_blueprint.route('/api/user/<id>/unfollow/', methods=['DELETE'])
 def user_unfollow(id):

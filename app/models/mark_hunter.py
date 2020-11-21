@@ -63,11 +63,13 @@ class Mark(db.Model, ApiModel):
 
     @property
     def serialized(self):
+        user = User.get_cached_user_by_id(request.current_user['uid'])
         return {
             'user_id': self.user_id,
             'category': self.category.serialized,
             'location': self.location.serialized,
             'content': self.content.serialized,
+            'by_followed': self.user_id in user.following,
             'id': self.id
         }
 
@@ -199,6 +201,8 @@ class UserNotFound(Exception):
     pass
 
 class User():
+    cached_user = None
+
     def __init__(self, uid):
         user_db = db.session.query(UserDB).filter(UserDB.user_id == uid).first()
         if user_db is None:
@@ -254,3 +258,16 @@ class User():
             'points': self.points,
             'username': self.username
         }
+
+    @classmethod
+    def get_cached_user_by_id(cls, uid):
+        if cls.cached_user:
+            if cls.cached_user.uid == uid:
+                return cls.cached_user
+        user = User(uid)
+        cls.cached_user = user
+        return user
+
+    @classmethod
+    def clear_cached_user(cls):
+        cls.cached_user = None
