@@ -63,13 +63,15 @@ class Mark(db.Model, ApiModel):
 
     @property
     def serialized(self):
-        user = User.get_cached_user_by_id(request.current_user['uid'])
+        current_user = User.get_cached_user_by_id(request.current_user['uid'])
+        author = User(self.user_id)
         return {
             'user_id': self.user_id,
+            'username': author.username,
             'category': self.category.serialized,
             'location': self.location.serialized,
             'content': self.content.serialized,
-            'by_followed': self.user_id in user.following,
+            'by_followed': self.user_id in current_user.following,
             'id': self.id
         }
 
