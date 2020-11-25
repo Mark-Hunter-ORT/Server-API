@@ -134,10 +134,13 @@ def user_post():
         else:
             return json_response(user), 200
     except UserNotFound:
-        user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
-        db.session.add(user_db)
-        db.session.commit()
-        return json_response(User(request.current_user['uid'])), 201
+        if request.method == 'POST':
+            user_db = UserDB(user_id=request.current_user['uid'], username=request.json["username"])
+            db.session.add(user_db)
+            db.session.commit()
+            return json_response(User(request.current_user['uid'])), 201
+        else:
+            return 'User not found', 404
 
 @api_blueprint.route('/api/user/followings/')
 def user_followings():
